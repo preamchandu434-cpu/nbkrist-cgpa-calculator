@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>NBKRIST CGPA Calculator</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header class="topbar">
+        <a href="/" class="brand">
+            <div class="crest">NBK</div>
+            <div>
+                <strong>NBKRIST</strong>
+                <span>ACADEMIC PERFORMANCE PORTAL</span>
+            </div>
+        </a>
+
+        <div class="header-badge">STUDENT TOOL · CGPA</div>
+    </header>
+
+    <main class="page">
+        <section class="hero">
+            <div class="eyebrow">YOUR ACADEMIC JOURNEY</div>
+
+            <h1>NBKRIST CGPA <span>Calculator</span></h1>
+
+            <p>
+                Calculate your cumulative grade point average with ease.
+                Enter your semester SGPAs, calculate your result, and track
+                your academic progress.
+            </p>
+        </section>
+
+        <div class="dashboard">
+
+            <!-- SGPA input section -->
+            <section class="card input-card">
+                <div class="section-heading">
+                    <div>
+                        <div class="section-tag">ACADEMIC DETAILS</div>
+                        <h2>Enter your semester SGPAs</h2>
+                        <p class="muted">
+                            Enter each SGPA on a 10-point scale.
+                        </p>
+                    </div>
+
+                    <div class="semester-count" id="semesterCount">
+                        {{ sgpas|length }} SEMESTERS
+                    </div>
+                </div>
+
+                {% if error %}
+                    <div class="error-message" role="alert">
+                        {{ error }}
+                    </div>
+                {% endif %}
+
+                <form method="POST" action="/" id="cgpaForm">
+                    <div id="semesterList" class="semester-list">
+
+                        {% for sgpa in sgpas %}
+                            <div class="semester-row">
+                                <div class="field">
+                                    <label for="sgpa{{ loop.index }}">
+                                        SEMESTER {{ "%02d"|format(loop.index) }}
+                                    </label>
+
+                                    <div class="input-wrapper">
+                                        <input
+                                            type="number"
+                                            id="sgpa{{ loop.index }}"
+                                            name="sgpa"
+                                            class="sgpa-input"
+                                            min="0"
+                                            max="10"
+                                            step="0.01"
+                                            value="{{ sgpa }}"
+                                            placeholder="e.g. 8.50"
+                                            required
+                                        >
+                                        <span class="input-suffix">/ 10</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="remove-button"
+                                    aria-label="Remove semester {{ loop.index }}"
+                                    title="Remove semester"
+                                >×</button>
+                            </div>
+                        {% endfor %}
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            type="button"
+                            class="button button-light"
+                            id="addSemester"
+                        >＋ Add semester</button>
+
+                        <button
+                            type="submit"
+                            class="button button-primary"
+                        >Calculate my CGPA <span>→</span></button>
+                    </div>
+
+                    <p class="form-note">
+                        You can enter between 1 and 12 semesters.
+                        Replace the fields with your actual SGPA results.
+                    </p>
+                </form>
+            </section>
+
+            <!-- Result section -->
+            <aside class="card result-card">
+                <div class="result-top">
+                    <div class="result-label">YOUR OVERALL CGPA</div>
+                    <div class="result-icon">✦</div>
+                </div>
+
+                <div class="score">
+                    {% if cgpa is not none %}
+                        {{ "%.2f"|format(cgpa) }}
+                    {% else %}
+                        --.--
+                    {% endif %}
+                    <span>/ 10</span>
+                </div>
+
+                <p class="result-description">
+                    {% if cgpa is not none %}
+                        Your average across {{ sgpas|length }}
+                        semester{% if sgpas|length != 1 %}s{% endif %}.
+                    {% else %}
+                        Your result will appear here after calculation.
+                    {% endif %}
+                </p>
+
+                {% if cgpa is not none %}
+                    <div class="result-badge">
+                        {% if cgpa >= 9 %}
+                            Outstanding achievement!
+                        {% elif cgpa >= 8 %}
+                            Excellent work!
+                        {% elif cgpa >= 7 %}
+                            Good progress!
+                        {% elif cgpa >= 6 %}
+                            Keep improving!
+                        {% elif cgpa >= 5 %}
+                            Keep moving forward!
+                        {% else %}
+                            Every step counts!
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="result-badge">Ready when you are</div>
+                {% endif %}
+
+                <div class="result-divider"></div>
+
+                <div class="stat-row">
+                    <span>Semesters entered</span>
+                    <strong>
+                        {% if cgpa is not none %}
+                            {{ sgpas|length }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="stat-row">
+                    <span>Total of SGPAs</span>
+                    <strong>
+                        {% if total is not none %}
+                            {{ "%.2f"|format(total) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="result-divider"></div>
+
+                <div class="formula-title">THE FORMULA</div>
+                <p class="formula">
+                    CGPA = Sum of all semester SGPAs ÷ Number of semesters
+                </p>
+
+                <p class="result-footnote">
+                    This calculator uses the simple-average method.
+                    Confirm your institution's official rules if needed.
+                </p>
+            </aside>
+
+        </div>
+
+        <footer class="footer">
+            <strong>NBKRIST</strong>
+            <span>Academic Performance Portal · Student project</span>
+        </footer>
+    </main>
+
+    <script>
+        const semesterList = document.getElementById("semesterList");
+        const semesterCount = document.getElementById("semesterCount");
+        const addButton = document.getElementById("addSemester");
+        const form = document.getElementById("cgpaForm");
+        const maxSemesters = 12;
+
+        function updateSemesters() {
+            const rows = semesterList.querySelectorAll(".semester-row");
+            const count = rows.length;
+
+            semesterCount.textContent =
+                `${count} SEMESTER${count === 1 ? "" : "S"}`;
+
+            rows.forEach((row, index) => {
+                const number = index + 1;
+                const label = row.querySelector("label");
+                const input = row.querySelector("input");
+                const removeButton = row.querySelector(".remove-button");
+
+                label.textContent =
+                    `SEMESTER ${String(number).padStart(2, "0")}`;
+
+                input.id = `sgpa${number}`;
+                input.setAttribute("aria-label", `Semester ${number} SGPA`);
+
+                removeButton.setAttribute(
+                    "aria-label",
+                    `Remove semester ${number}`
+                );
+
+                removeButton.disabled = count === 1;
+            });
+
+            addButton.disabled = count >= maxSemesters;
+        }
+
+        addButton.addEventListener("click", () => {
+            const count = semesterList.querySelectorAll(".semester-row").length;
+
+            if (count >= maxSemesters) {
+                return;
+            }
+
+            const number = count + 1;
+            const row = document.createElement("div");
+
+            row.className = "semester-row";
+
+            const field = document.createElement("div");
+            field.className = "field";
+
+            const label = document.createElement("label");
+            label.htmlFor = `sgpa${number}`;
+            label.textContent =
+                `SEMESTER ${String(number).padStart(2, "0")}`;
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "input-wrapper";
+
+            const input = document.createElement("input");
+            input.type = "number";
+            input.name = "sgpa";
+            input.id = `sgpa${number}`;
+            input.className = "sgpa-input";
+            input.min = "0";
+            input.max = "10";
+            input.step = "0.01";
+            input.placeholder = "e.g. 8.50";
+            input.required = true;
+            input.setAttribute("aria-label", `Semester ${number} SGPA`);
+
+            const suffix = document.createElement("span");
+            suffix.className = "input-suffix";
+            suffix.textContent = "/ 10";
+
+            wrapper.append(input, suffix);
+            field.append(label, wrapper);
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "remove-button";
+            removeButton.textContent = "×";
+            removeButton.title = "Remove semester";
+            removeButton.setAttribute(
+                "aria-label",
+                `Remove semester ${number}`
+            );
+
+            row.append(field, removeButton);
+            semesterList.appendChild(row);
+
+            updateSemesters();
+            input.focus();
+        });
+
+        semesterList.addEventListener("click", (event) => {
+            const button = event.target.closest(".remove-button");
+
+            if (!button || button.disabled) {
+                return;
+            }
+
+            button.closest(".semester-row").remove();
+            updateSemesters();
+        });
+
+        form.addEventListener("submit", (event) => {
+            const inputs = [...semesterList.querySelectorAll(".sgpa-input")];
+
+            if (inputs.length < 1 || inputs.length > maxSemesters) {
+                event.preventDefault();
+                alert("Please enter between 1 and 12 semesters.");
+                return;
+            }
+
+            for (const input of inputs) {
+                const value = input.valueAsNumber;
+
+                if (
+                    input.value.trim() === "" ||
+                    !Number.isFinite(value) ||
+                    value < 0 ||
+                    value > 10
+                ) {
+                    event.preventDefault();
+                    alert("Every SGPA must be a number between 0 and 10.");
+                    input.focus();
+                    return;
+                }
+            }
+        });
+
+        updateSemesters();
+    </script>
+</body>
+</html>
